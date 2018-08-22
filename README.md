@@ -6,15 +6,16 @@ Harmony is a unified framework for data visualization, analysis and interpretati
 
 #### Installation and dependencies
 1. Harmony has been implemented in Python3 and can be installed using:
-
+```
         $> git clone git://github.com/dpeerlab/Palantir.git
         $> cd Palantir
         $> sudo -H pip3 install .
-	$> cd ../
-	$> git clone git://github.com/dpeerlab/Harmony.git
-	$> cd Harmony
-	$> sudo -H pip3 install .
 
+	$> cd ../
+        $> git clone git://github.com/dpeerlab/Palantir.git
+        $> cd Palantir
+        $> sudo -H pip3 install .
+```
 2. Harmony depends on a number of `python3` packages available on pypi and these dependencies are listed in `setup.py`
 All the dependencies will be automatically installed using the above commands
 
