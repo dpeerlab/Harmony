@@ -1,7 +1,7 @@
-Palantir
+Harmony
 ------
 
-Palantir is an algorithm to align cells along differentiation trajectories. Palantir models differentiation as a stochastic process where stem cells differentiate to terminally differentiated cells by a series of steps through a low dimensional phenotypic manifold. Palantir effectively captures the continuity in cell states and the stochasticity in cell fate determination. Palantir has been designed to work with multidimensional single cell data from diverse technologies such as Mass cytometry and single cell RNA-seq. 
+Harmony is a unified framework for data visualization, analysis and interpretation of scRNA-seq data measured across discrete time points.
 
 
 #### Installation and dependencies
