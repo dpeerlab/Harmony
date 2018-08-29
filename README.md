@@ -1,22 +1,27 @@
-Palantir
+Harmony
 ------
 
-Palantir is an algorithm to align cells along differentiation trajectories. Palantir models differentiation as a stochastic process where stem cells differentiate to terminally differentiated cells by a series of steps through a low dimensional phenotypic manifold. Palantir effectively captures the continuity in cell states and the stochasticity in cell fate determination. Palantir has been designed to work with multidimensional single cell data from diverse technologies such as Mass cytometry and single cell RNA-seq. 
+Harmony is a unified framework for data visualization, analysis and interpretation of scRNA-seq data measured across discrete time points.Harmony constructs an augmented affinity matrix by augmenting the kNN graph affinity matrix with mutually nearest neighbors between successive time points. This augmented affinity matrix forms the basis for generated a force directed layout for visualization and also serves as input for computing the diffusion operator which can be used for trajectory detection using Palantir
 
 
 #### Installation and dependencies
-1. Palantir has been implemented in Python3 and can be installed using:
-
+1. Harmony has been implemented in Python3 and can be installed using:
+```
         $> git clone git://github.com/dpeerlab/Palantir.git
         $> cd Palantir
         $> sudo -H pip3 install .
 
-2. Palantir depends on a number of `python3` packages available on pypi and these dependencies are listed in `setup.py`
+	$> cd ../
+        $> git clone git://github.com/dpeerlab/Palantir.git
+        $> cd Palantir
+        $> sudo -H pip3 install .
+```
+2. Harmony depends on a number of `python3` packages available on pypi and these dependencies are listed in `setup.py`
 All the dependencies will be automatically installed using the above commands
 
 3. To uninstall:
 		
-		$> sudo -H pip3 uninstall palantir
+		$> sudo -H pip3 uninstall harmony
 
 4. If you would like to determine gene expression trends, please install <a href="https://cran.r-project.org"> R <a> programming language and the R package <a href="https://cran.r-project.org/web/packages/gam/">GAM </a>. You will also need to install the rpy2 module using 
 	
@@ -25,8 +30,8 @@ All the dependencies will be automatically installed using the above commands
 
 #### Usage
 
-A tutorial on Palantir usage and results visualization for single cell RNA-seq data can be found in this notebook: http://nbviewer.jupyter.org/github/dpeerlab/Palantir/blob/master/notebooks/Palantir_sample_notebook.ipynb
+A tutorial on Harmony usage and results visualization for single cell RNA-seq data can be found in this notebook: http://nbviewer.jupyter.org/github/dpeerlab/Harmony/blob/master/notebooks/Harmony_sample_notebook.ipynb
 
 
 #### Citations
-Palantir manuscript is in submission: "Palantir characterizes cell fate continuities in human hematopoiesis". Preprint is available at https://www.biorxiv.org/content/early/2018/08/05/385328
+
