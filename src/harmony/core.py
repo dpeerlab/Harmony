@@ -93,7 +93,7 @@ def _convert_to_affinity(adj, scaling_factors, with_self_loops=False):
     """
     N = adj.shape[0]
     rows, cols, dists = find(adj)
-    dists = dists / (scaling_factors.values[rows] ** 2)
+    dists = dists ** 2/ (scaling_factors.values[rows] ** 2)
 
     # Self loops
     if with_self_loops:
