@@ -34,5 +34,5 @@ A tutorial on Harmony usage and results visualization for single cell RNA-seq da
 
 
 #### Citations
-
-bioRxiv submission in works.
+Harmony was used to build a unified view of the mouse endoderm data measured at discrete time points. 
+"Charting the emergent organotypic landscape of the mammalian gut endoderm at single-cell resolution." https://www.biorxiv.org/content/early/2018/11/15/471078
