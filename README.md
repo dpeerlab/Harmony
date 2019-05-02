@@ -32,7 +32,9 @@ All the dependencies will be automatically installed using the above commands
 
 A tutorial on Harmony usage and results visualization for single cell RNA-seq data can be found in this notebook: http://nbviewer.jupyter.org/github/dpeerlab/Harmony/blob/master/notebooks/Harmony_sample_notebook.ipynb
 
+The datasets generated as part of the manuscript and harmozined using Harmony are available for exploration at: [endoderm-explorer.com](https://endoderm-explorer.com)
+
 
 #### Citations
-Harmony was used to build a unified view of the mouse endoderm data measured at discrete time points. 
-"Charting the emergent organotypic landscape of the mammalian gut endoderm at single-cell resolution." https://www.biorxiv.org/content/early/2018/11/15/471078
+Harmony was used to harmonize datasets across multiple time points in our manuscript characterizing mouse gut endoderm development.  This manuscript is available at [Nature](https://www.nature.com/articles/s41586-019-1127-1). If you use Harmony for your work, please cite our paper.
+
