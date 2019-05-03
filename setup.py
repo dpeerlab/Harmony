@@ -1,4 +1,3 @@
-import os
 import sys
 import shutil
 from subprocess import call
@@ -23,7 +22,7 @@ if shutil.which('pip3'):
 setup(name='harmony',
       version=__version__,  # read in from the exec of version.py; ignore error   
       description='Harmony is a unified framework for data visualization, analysis and interpretation of scRNA-seq data measured across discrete time points',
-      url='https://github.com/manusetty/harmony',
+      url='https://github.com/dpeerlab/harmony',
       author='Manu Setty',
       author_email='manu.talanki@gmail.com',
       package_dir={'': 'src'},
@@ -35,6 +34,6 @@ setup(name='harmony',
           'sklearn',
           'fa2',
           'matplotlib>=2.2.2',
-          'seaborn>=0.8.1'          
+          'seaborn>=0.8.1'
       ],
       )
