@@ -84,8 +84,8 @@ def hvg_genes(norm_df, no_genes=1000):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         disp_mad_bin = disp_grouped.apply(robust.mad)
-    df['dispersion_norm'] = np.abs((df['dispersion'].values - disp_median_bin[df['mean_bin']].values)) \
-        / disp_mad_bin[df['mean_bin']].values
+    df['dispersion_norm'] = np.abs((df['dispersion'].values - disp_median_bin[df['mean_bin'].values].values)) \
+        / disp_mad_bin[df['mean_bin'].values].values
 
     # Subset of genes
     use_genes = df['dispersion_norm'].sort_values().index[::-1][:no_genes]
@@ -102,7 +102,7 @@ def run_pca(data, n_components=300, var_explained=0.85):
     number of components = min(n_components, components explaining var_explained)
     :return: PCA projections of the data and the explained variance
     """
-    init_components = min([n_components, data.shape[1]])
+    init_components = min([n_components, data.shape[0]])
     pca = PCA(n_components=init_components, svd_solver='randomized')
     pca.fit(data)
     if pca.explained_variance_ratio_.sum() >= 0.85:
