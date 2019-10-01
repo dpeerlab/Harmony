@@ -16,7 +16,7 @@ def augmented_affinity_matrix(data_df, timepoints, timepoint_connections,
     :param timepoints: Panadas series indicating timepoints for each cell in data_df
     :param timepoint_connections: Links between timepoints
     :param n_neighbors: Number of nearest neighbors for graph construction
-    :param pc_components: Minimum number of principal components to use
+    :param pc_components: Minimum number of principal components to use. Specify `None` to use pre-computed components
     :return: Affinity matrix  augmented to mutually nearest neighbors
     """
 
@@ -34,7 +34,10 @@ def augmented_affinity_matrix(data_df, timepoints, timepoint_connections,
         offset += len(tp_cells[i])
 
     # Run PCA to denoise the dropouts
-    pca_projections, _ = utils.run_pca(data_df, n_components=pc_components)
+    if pc_components is None:
+        pca_projections = data_df
+    else:
+        pca_projections, _ = utils.run_pca(data_df, n_components=pc_components)
 
     # Nearest neighbor graph construction and affinity matrix
     print('Nearest neighbor computation...')
