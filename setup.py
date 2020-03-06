@@ -21,7 +21,7 @@ if shutil.which("pip3"):
 
 
 setup(
-    name="harmony_time_series",
+    name="harmonyTS",
     version=__version__,  # read in from the exec of version.py; ignore error
     description=(
         "Harmony is a unified framework for data visualization, analysis "
