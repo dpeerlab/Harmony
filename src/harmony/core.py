@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import scanpy as sc
 
 from scipy.sparse import find, csr_matrix
 from sklearn.neighbors import NearestNeighbors
@@ -41,16 +42,35 @@ def augmented_affinity_matrix(data_df, timepoints, timepoint_connections,
 
     # Nearest neighbor graph construction and affinity matrix
     print('Nearest neighbor computation...')
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors,
-                            metric='euclidean', n_jobs=-2)
-    nbrs.fit(pca_projections.values)
-    dists, _ = nbrs.kneighbors(pca_projections.values)
-    adj = nbrs.kneighbors_graph(pca_projections.values, mode='distance')
-    # Scaling factors for affinity matrix construction
-    ka = np.int(n_neighbors / 3)
-    scaling_factors = pd.Series(dists[:, ka], index=cell_order)
+
+    # --------------------------------------------------------------------------
+    # nbrs = NearestNeighbors(n_neighbors=n_neighbors,
+    #                         metric='euclidean', n_jobs=-2)
+    # nbrs.fit(pca_projections.values)
+    # dists, _ = nbrs.kneighbors(pca_projections.values)
+    # adj = nbrs.kneighbors_graph(pca_projections.values, mode='distance')
+    # # Scaling factors for affinity matrix construction
+    # ka = np.int(n_neighbors / 3)
+    # scaling_factors = pd.Series(dists[:, ka], index=cell_order)
+    # # Affinity matrix
+    # nn_aff = _convert_to_affinity(adj, scaling_factors, True)
+    # --------------------------------------------------------------------------
+
+    temp = sc.AnnData(data_df.values)
+    sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors)
+    kNN = temp.uns['neighbors']['distances']
+
+    # Adaptive k
+    adaptive_k = int(np.floor(n_neighbors / 3))
+    scaling_factors = np.zeros(data_df.shape[0])
+
+    for i in np.arange(len(scaling_factors)):
+        scaling_factors[i] = np.sort(kNN.data[kNN.indptr[i]:kNN.indptr[i + 1]])[adaptive_k - 1]
+
+    scaling_factors = pd.Series(scaling_factors, index=cell_order)
+
     # Affinity matrix
-    nn_aff = _convert_to_affinity(adj, scaling_factors, True)
+    nn_aff = _convert_to_affinity(kNN, scaling_factors, True)
 
     # Mututally nearest neighbor affinity matrix
     # Initilze mnn affinity matrix
@@ -96,7 +116,7 @@ def _convert_to_affinity(adj, scaling_factors, with_self_loops=False):
     """
     N = adj.shape[0]
     rows, cols, dists = find(adj)
-    dists = dists ** 2/ (scaling_factors.values[rows] ** 2)
+    dists = dists ** 2/(scaling_factors.values[rows] ** 2)
 
     # Self loops
     if with_self_loops:
