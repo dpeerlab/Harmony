@@ -1,6 +1,4 @@
 import sys
-import shutil
-from subprocess import call
 from setuptools import setup
 from warnings import warn
 
@@ -14,11 +12,6 @@ with open("src/harmony/version.py") as f:
     exec(f.read())
 with open("README.md", "r") as fh:
     long_description = fh.read()
-
-# install GraphDiffusion
-if shutil.which("pip3"):
-    call(["pip3", "install", "git+https://github.com/dpeerlab/Palantir.git"])
-
 
 setup(
     name="harmonyTS",
@@ -42,6 +35,7 @@ setup(
         "fa2",
         "matplotlib>=2.2.2",
         "seaborn>=0.8.1",
+        "palantir>=0.2.3"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
