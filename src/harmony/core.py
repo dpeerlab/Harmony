@@ -9,14 +9,21 @@ from sklearn.linear_model import LinearRegression
 from harmony import utils
 
 
-def augmented_affinity_matrix(data_df, timepoints, timepoint_connections,
-                 n_neighbors=30, n_jobs=-2, pc_components=1000):
+def augmented_affinity_matrix(
+    data_df,
+    timepoints,
+    timepoint_connections,
+    n_neighbors=30,
+    n_jobs=-2,
+    pc_components=1000
+):
     """Function for max min sampling of waypoints
 
     :param data_df: Normalized data frame. Data frame should be sorted according to the timepoints
     :param timepoints: Panadas series indicating timepoints for each cell in data_df
     :param timepoint_connections: Links between timepoints
     :param n_neighbors: Number of nearest neighbors for graph construction
+    :param n_jobs: Nearest Neighbors will be computed in parallel using n_jobs.
     :param pc_components: Minimum number of principal components to use. Specify `None` to use pre-computed components
     :return: Affinity matrix  augmented to mutually nearest neighbors
     """
