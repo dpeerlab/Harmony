@@ -35,7 +35,8 @@ setup(
         "fa2",
         "matplotlib>=2.2.2",
         "seaborn>=0.8.1",
-        "palantir>=0.2.3"
+        "palantir>=0.2.3",
+        'scanpy',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
