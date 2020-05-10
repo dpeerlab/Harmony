@@ -65,7 +65,11 @@ def augmented_affinity_matrix(
 
     temp = sc.AnnData(data_df.values)
     sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors)
-    kNN = temp.uns['neighbors']['distances']
+    # maintaining backwards compatibility to Scanpy `sc.pp.neighbors`
+    try:
+        kNN = temp.uns['neighbors']['distances']
+    except KeyError:
+        kNN = temp.obsp['distances']
 
     # Adaptive k
     adaptive_k = int(np.floor(n_neighbors / 3))
