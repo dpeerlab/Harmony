@@ -34,11 +34,10 @@ with warnings.catch_warnings():
 
 warnings.filterwarnings(action="ignore", message="remove_na is deprecated")
 
-from fa2 import ForceAtlas2
-import pandas as pd
+import cugraph
+import cudf
 import numpy as np
-import random
-
+import pandas as pd
 def force_directed_layout(affinity_matrix, cell_names=None, verbose=True, iterations=500):
     """" Function to compute force directed layout from the affinity_matrix
     :param affinity_matrix: Sparse matrix representing affinities between cells
@@ -49,28 +48,35 @@ def force_directed_layout(affinity_matrix, cell_names=None, verbose=True, iterat
     """
 
     init_coords = np.random.random((affinity_matrix.shape[0], 2))
+ 
+    
+    offsets = cudf.Series(affinity_matrix.indptr)
+    indices = cudf.Series(affinity_matrix.indices)
+    G = cugraph.Graph()
+    G.from_cudf_adjlist(offsets, indices, None)
 
-    forceatlas2 = ForceAtlas2(
-        # Behavior alternatives
-        outboundAttractionDistribution=False,  
-        linLogMode=False,  
-        adjustSizes=False,  
-        edgeWeightInfluence=1.0,
-        # Performance
-        jitterTolerance=1.0,  
-        barnesHutOptimize=True,
-        barnesHutTheta=1.2,
-        multiThreaded=False,  
-        # Tuning
-        scalingRatio=2.0,
-        strongGravityMode=False,
+    forceatlas2 = cugraph.layout.force_atlas2(
+        G,
+        max_iter=iterations,
+        pos_list=cudf.DataFrame(
+            {
+                "vertex": np.arange(init_coords.shape[0]),
+                "x": init_coords[:, 0],
+                "y": init_coords[:, 1],
+            }
+        ),
+        outbound_attraction_distribution=False,
+        lin_log_mode=False,
+        edge_weight_influence=1.0,
+        jitter_tolerance=1.0,
+        barnes_hut_optimize=True,
+        barnes_hut_theta=1.2,
+        scaling_ratio=2.0,
+        strong_gravity_mode=False,
         gravity=1.0,
-        # Log
-        verbose=verbose)
-
-    positions = forceatlas2.forceatlas2(
-        affinity_matrix, pos=init_coords, iterations=iterations)
-    positions = np.array(positions)
+        verbose=True,
+    )
+    positions = forceatlas2.to_pandas().loc[:, ["x", "y"]].values
 
     # Convert to dataframe
     if cell_names is None:
