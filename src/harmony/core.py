@@ -67,7 +67,8 @@ def augmented_affinity_matrix(
 
 
     temp = sc.AnnData(data_df.values)
-    sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors,method='rapids')
+    # the following call is the now the bottleneck:
+    sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors,method='rapids') 
     # maintaining backwards compatibility to Scanpy `sc.pp.neighbors`
     try:
         kNN = temp.uns['neighbors']['distances']
@@ -164,7 +165,7 @@ def _construct_mnn(t1_cells, t2_cells, data_df, n_neighbors):
     mnn = mnn.sqrt()
     return csr_matrix(mnn)
 
-
+# Rewritten for speed improvements
 def _mnn_ka_distances(mnn, n_neighbors):
     # Function to find distance ka^th neighbor in the mutual nearest neighbor matrix
     ka = np.int(n_neighbors / 3)
