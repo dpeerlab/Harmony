@@ -1,21 +1,3 @@
-Harmony-GPU
------------
-
-This is a GPU implementation of Harmony python package, leading to great speedups for big datasets. This package runs only on CUDA GPUs and requires Rapids libraries with cupy>=9.
-
-To install:
-
-	$> pip install git+https://github.com/LouisFaure/Harmony-GPU
-	
-The following modifications have been made:
-* `sklearn.neighbors.NearestNeighbors` has been replaced by `cuml.NearestNeighbors`
-* `sklearn.linear_model.LinearRegression` has been replaced by `cuml.LinearRegression`
-* `scipy.sparse.find` has been replaced by `cupyx.scipy.sparse.find` in some instances
-*  'rapids' has beeen added to the 'method' parameter in the call of `sc.pp.neighbors`
-* `fa2.ForceAtlas2` has been replaced by `cugraph.ForceAtlas2`
-* `_mnn_ka_distances` function has been replaced by a faster one
-
-
 Harmony
 ------
 
