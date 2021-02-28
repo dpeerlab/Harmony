@@ -21,6 +21,8 @@ All the dependencies will be automatically installed using the above commands
 	
 		$> pip install rpy2
 		
+5. If you would like to speed-up the analysis in case of big datasets, you can run the main functions of this package on a CUDA GPU. To do so please install `rapids-0.17` as well as `cupy>=9.0`.
+		
 
 #### Usage
 
