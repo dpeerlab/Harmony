@@ -1,13 +1,8 @@
 import pandas as pd
 import numpy as np
-import cupy as cp
 import scanpy as sc
 
-from cupyx.scipy.sparse import find, csr_matrix
-from scipy.sparse import find as find_cpu
-from scipy.sparse import csr_matrix as csr_matrix_cpu
-from cuml import NearestNeighbors
-from cuml import LinearRegression
+from scipy.sparse import find, csr_matrix
 
 from harmony import utils
 
@@ -17,7 +12,9 @@ def augmented_affinity_matrix(
     timepoints,
     timepoint_connections,
     n_neighbors=30,
-    pc_components=1000
+    n_jobs=-2,
+    pc_components=1000,
+    device="cpu",
 ):
     """Function for max min sampling of waypoints
 
@@ -47,7 +44,7 @@ def augmented_affinity_matrix(
     if pc_components is None:
         pca_projections = data_df
     else:
-        pca_projections, _ = utils.run_pca(data_df, n_components=pc_components)
+        pca_projections, _ = utils.run_pca(data_df,device, n_components=pc_components)
 
     # Nearest neighbor graph construction and affinity matrix
     print('Nearest neighbor computation...')
@@ -64,18 +61,25 @@ def augmented_affinity_matrix(
     # # Affinity matrix
     # nn_aff = _convert_to_affinity(adj, scaling_factors, True)
     # --------------------------------------------------------------------------
-
-
-    temp = sc.AnnData(data_df.values)
-    # the following call is the now the bottleneck:
-    sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors,method='rapids') 
-    # maintaining backwards compatibility to Scanpy `sc.pp.neighbors`
-    try:
-        kNN = temp.uns['neighbors']['distances']
-    except KeyError:
-        kNN = temp.obsp['distances']
-
     
+    if device == "cpu":
+        temp = sc.AnnData(data_df.values)
+        sc.pp.neighbors(temp, n_pcs=0, n_neighbors=n_neighbors)
+        # maintaining backwards compatibility to Scanpy `sc.pp.neighbors`
+        try:
+            kNN = temp.uns['neighbors']['distances']
+        except KeyError:
+            kNN = temp.obsp['distances']
+    elif device == "gpu":
+        from cuml.neighbors import NearestNeighbors
+        nn = NearestNeighbors(n_neighbors=n_neighbors,metric="euclidean")
+        X_contiguous = np.ascontiguousarray(data_df.values)
+        nn.fit(X_contiguous)
+
+        kNN = nn.kneighbors_graph(X_contiguous,mode="distance")
+        kNN.setdiag(0)
+        kNN.eliminate_zeros()
+
     # Adaptive k
     adaptive_k = int(np.floor(n_neighbors / 3))
     scaling_factors = np.zeros(data_df.shape[0])
@@ -86,12 +90,12 @@ def augmented_affinity_matrix(
     scaling_factors = pd.Series(scaling_factors, index=cell_order)
 
     # Affinity matrix
-    nn_aff = _convert_to_affinity(csr_matrix(kNN), scaling_factors, True)
+    nn_aff = _convert_to_affinity(kNN, scaling_factors, device, True)
 
     # Mututally nearest neighbor affinity matrix
     # Initilze mnn affinity matrix
     N = len(cell_order)
-    full_mnn_aff = csr_matrix_cpu(([0], ([0], [0])), [N, N])
+    full_mnn_aff = csr_matrix(([0], ([0], [0])), [N, N])
     for i in timepoint_connections.index:
         t1, t2 = timepoint_connections.loc[i, :].values
         print(f'Constucting affinities between {t1} and {t2}...')
@@ -100,7 +104,7 @@ def augmented_affinity_matrix(
         t1_cells = tp_cells[t1]
         t2_cells = tp_cells[t2]
         mnn = _construct_mnn(t1_cells, t2_cells, pca_projections,
-                             n_neighbors)
+                             n_neighbors, device, n_jobs)
 
         # MNN Scaling factors
         # Distance to the adaptive neighbor
@@ -113,49 +117,66 @@ def augmented_affinity_matrix(
         # Scaling factors
         mnn_scaling_factors = pd.Series(0.0, index=cell_order)
         mnn_scaling_factors[t1_cells] = _mnn_scaling_factors(
-            ka_dists[t1_cells], scaling_factors)
+            ka_dists[t1_cells], scaling_factors, device)
         mnn_scaling_factors[t2_cells] = _mnn_scaling_factors(
-            ka_dists[t2_cells], scaling_factors)
+            ka_dists[t2_cells], scaling_factors, device)
 
         # MNN affinity matrix
         full_mnn_aff = full_mnn_aff + \
             _mnn_affinity(mnn, mnn_scaling_factors,
-                          tp_offset[t1], tp_offset[t2]).get()
+                          tp_offset[t1], tp_offset[t2], device)
 
     # Symmetrize the affinity matrix and return
-    aff = nn_aff.get() + nn_aff.get().T + full_mnn_aff + full_mnn_aff.T
+    aff = nn_aff + nn_aff.T + full_mnn_aff + full_mnn_aff.T
     return aff, nn_aff + nn_aff.T
 
 
-def _convert_to_affinity(adj, scaling_factors, with_self_loops=False):
+def _convert_to_affinity(adj, scaling_factors, device, with_self_loops=False):
     """ Convert adjacency matrix to affinity matrix
     """
     N = adj.shape[0]
     rows, cols, dists = find(adj)
-    dists = dists ** 2/(cp.array(scaling_factors.values[rows.get()]) ** 2)
+    if device == "gpu":
+        import cupy as cp
+        from cupyx.scipy.sparse import csr_matrix as csr_matrix_gpu
+        dists = cp.array(dists) ** 2/(cp.array(scaling_factors.values[rows]) ** 2)
+        rows, cols = cp.array(rows), cp.array(cols)
+        # Self loops
+        if with_self_loops:
+            dists = cp.append(dists, cp.zeros(N))
+            rows = cp.append(rows, range(N))
+            cols = cp.append(cols, range(N))
+        aff = csr_matrix_gpu((cp.exp(-dists), (rows, cols)), shape=(N, N)).get()
+    elif device == "cpu":
+        dists = dists ** 2/(scaling_factors.values[rows] ** 2)
 
-    # Self loops
-    if with_self_loops:
-        dists = cp.append(dists, cp.zeros(N))
-        rows = cp.append(rows, range(N))
-        cols = cp.append(cols, range(N))
-    aff = csr_matrix((cp.exp(-dists), (rows, cols)), shape=(N, N))
+        # Self loops
+        if with_self_loops:
+            dists = np.append(dists, np.zeros(N))
+            rows = np.append(rows, range(N))
+            cols = np.append(cols, range(N))
+        aff = csr_matrix((np.exp(-dists), (rows, cols)), shape=[N, N])
     return aff
 
 
-def _construct_mnn(t1_cells, t2_cells, data_df, n_neighbors):
+def _construct_mnn(t1_cells, t2_cells, data_df, n_neighbors,device,n_jobs=-2):
     # FUnction to construct mutually nearest neighbors bewteen two points
-
+    
+    if device == "gpu":
+        from cuml import NearestNeighbors
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors,
+                                metric='euclidean')
+    elif device == "cpu":
+        from sklearn.neighbors import NearestNeighbors
+        nbrs = NearestNeighbors(n_neighbors=n_neighbors,
+                                metric='euclidean', n_jobs=n_jobs)
+    
     print(f't+1 neighbors of t...')
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors,
-                            metric='euclidean')
     nbrs.fit(data_df.loc[t1_cells, :].values)
     t1_nbrs = nbrs.kneighbors_graph(
         data_df.loc[t2_cells, :].values, mode='distance')
 
     print(f't neighbors of t+1...')
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors,
-                            metric='euclidean')
     nbrs.fit(data_df.loc[t2_cells, :].values)
     t2_nbrs = nbrs.kneighbors_graph(
         data_df.loc[t1_cells, :].values, mode='distance')
@@ -163,7 +184,7 @@ def _construct_mnn(t1_cells, t2_cells, data_df, n_neighbors):
     # Mututally nearest neighbors
     mnn = t2_nbrs.multiply(t1_nbrs.T)
     mnn = mnn.sqrt()
-    return csr_matrix(mnn)
+    return mnn
 
 # Rewritten for speed improvements
 def _mnn_ka_distances(mnn, n_neighbors):
@@ -171,13 +192,16 @@ def _mnn_ka_distances(mnn, n_neighbors):
     ka = np.int(n_neighbors / 3)
     ka_dists = np.repeat(None, mnn.shape[0])
     x, y, z = find(mnn)
-    rows=pd.Series(x.get()).value_counts()
-    x,z=x.get(),z.get()
+    rows=pd.Series(x).value_counts()
     for r in rows.index[rows >= ka]:
         ka_dists[r] = np.sort(z[x==r])[ka - 1]
     return ka_dists
 
-def _mnn_scaling_factors(mnn_ka_dists, scaling_factors):
+def _mnn_scaling_factors(mnn_ka_dists, scaling_factors,device):
+    if device == "gpu":
+        from cuml import LinearRegression
+    else:
+        from sklearn.linear_model import LinearRegression
     cells = mnn_ka_dists.index[~mnn_ka_dists.isnull()]
 
     # Linear model fit
@@ -194,7 +218,7 @@ def _mnn_scaling_factors(mnn_ka_dists, scaling_factors):
     return mnn_scaling_factors
 
 
-def _mnn_affinity(mnn, mnn_scaling_factors, offset1, offset2):
+def _mnn_affinity(mnn, mnn_scaling_factors, offset1, offset2, device):
     # Function to convert mnn matrix to affinicty matrix
 
     # Construct adjacency matrix
@@ -202,7 +226,7 @@ def _mnn_affinity(mnn, mnn_scaling_factors, offset1, offset2):
     x, y, z = find(mnn)
     x = x + offset1
     y = y + offset2
-    adj = csr_matrix((z, (x, y)), shape=(N, N))
+    adj = csr_matrix((z, (x, y)), shape=[N, N])
 
     # Affinity matrix
-    return _convert_to_affinity(adj, mnn_scaling_factors, False)
+    return _convert_to_affinity(adj, mnn_scaling_factors, device, False)

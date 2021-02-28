@@ -5,7 +5,6 @@ import re
 from itertools import chain
 from collections import OrderedDict
 import warnings
-from sklearn.decomposition import PCA
 
 
 def load_from_csvs(csv_files, sample_names=None, min_cell_count=10):
@@ -93,7 +92,7 @@ def hvg_genes(norm_df, no_genes=1000):
     return use_genes
 
 
-def run_pca(data, n_components=300, var_explained=0.85):
+def run_pca(data, device, n_components=300, var_explained=0.85):
     """Run PCA
 
     :param data: Dataframe of cells X genes. Typicaly multiscale space diffusion components
@@ -103,13 +102,17 @@ def run_pca(data, n_components=300, var_explained=0.85):
     :return: PCA projections of the data and the explained variance
     """
     init_components = min([n_components, data.shape[0]])
-    pca = PCA(n_components=init_components, svd_solver='randomized')
+    if device == "gpu":
+        from cuml import PCA
+        pca = PCA(n_components=init_components)
+    elif device == "cpu":
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components=init_components, svd_solver='randomized')
     pca.fit(data)
     if pca.explained_variance_ratio_.sum() >= 0.85:
         n_components = np.where(np.cumsum(pca.explained_variance_ratio_) >= var_explained)[0][0]
 
     print(f'Running PCA with {n_components} components')
-    pca = PCA(n_components=n_components, svd_solver='randomized')
     pca_projections = pca.fit_transform(data)
     pca_projections = pd.DataFrame(pca_projections, index=data.index)
     return pca_projections, pca.explained_variance_ratio_
