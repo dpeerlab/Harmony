@@ -31,7 +31,7 @@ setup(
         "numpy>=1.14.2",
         "pandas>=0.22.0",
         "scipy>=1.0.1",
-        "sklearn",
+        "scikit-learn",
         "fa2",
         "matplotlib>=2.2.2",
         "seaborn>=0.8.1",
