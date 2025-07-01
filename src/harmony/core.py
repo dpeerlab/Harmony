@@ -56,7 +56,7 @@ def augmented_affinity_matrix(
     # dists, _ = nbrs.kneighbors(pca_projections.values)
     # adj = nbrs.kneighbors_graph(pca_projections.values, mode='distance')
     # # Scaling factors for affinity matrix construction
-    # ka = np.int(n_neighbors / 3)
+    # ka = int(n_neighbors / 3)
     # scaling_factors = pd.Series(dists[:, ka], index=cell_order)
     # # Affinity matrix
     # nn_aff = _convert_to_affinity(adj, scaling_factors, True)
@@ -189,7 +189,7 @@ def _construct_mnn(t1_cells, t2_cells, data_df, n_neighbors,device,n_jobs=-2):
 # Rewritten for speed improvements
 def _mnn_ka_distances(mnn, n_neighbors):
     # Function to find distance ka^th neighbor in the mutual nearest neighbor matrix
-    ka = np.int(n_neighbors / 3)
+    ka = int(n_neighbors / 3)
     ka_dists = np.repeat(None, mnn.shape[0])
     x, y, z = find(mnn)
     rows=pd.Series(x).value_counts()
