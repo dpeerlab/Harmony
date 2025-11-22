@@ -34,7 +34,7 @@ with warnings.catch_warnings():
 
 warnings.filterwarnings(action="ignore", message="remove_na is deprecated")
 
-from fa2 import ForceAtlas2
+from fa2_modified import ForceAtlas2
 import pandas as pd
 import numpy as np
 import random
