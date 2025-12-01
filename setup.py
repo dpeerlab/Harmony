@@ -32,7 +32,7 @@ setup(
         "pandas>=0.22.0",
         "scipy>=1.0.1",
         "scikit-learn",
-        "fa2",
+        "fa2-modified",
         "matplotlib>=2.2.2",
         "seaborn>=0.8.1",
         "palantir>=0.2.3",
